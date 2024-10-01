@@ -12,7 +12,7 @@ module.exports = {
                 return getErrorResponse({ response, code: 400, message: "Missing required fields" });
             } else {
                 const user = new User();
-                const existingUser = await user.findUserByEmail(email);
+                const existingUser = await user.getUserByEmail(email);
 
                 if (!existingUser) {
                     await user.createUser({
@@ -44,7 +44,7 @@ module.exports = {
                 return getErrorResponse({ response, code: 400, message: "Missing required fields" });
             } else {
                 const user = new User();
-                const existingUser = await user.findUserByEmail(email);
+                const existingUser = await user.getUserByEmail(email);
 
                 if (existingUser?.email) {
                     const isPasswordCorrect = await bcrypt.compare(password, existingUser?.password);

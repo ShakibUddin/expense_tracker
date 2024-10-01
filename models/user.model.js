@@ -6,7 +6,12 @@ class User{
 
     }
 
-    async findUserByEmail(email){
+    async getUserById(userId){
+        const [results] = await db.execute(`SELECT * FROM users where id=?`,[userId]);        
+        return results[0];
+    }
+
+    async getUserByEmail(email){
         const [results] = await db.execute(`SELECT * FROM users where email=?`,[email]);        
         return results[0];
     }
