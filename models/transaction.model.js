@@ -25,13 +25,15 @@ class Transaction {
     }
 
     async createTransaction({ userId, title, price, description, categoryId, unit }) {
-        const [results] = await db.execute(`INSERT INTO transactions(user_id, title, price, description, category_id, unit) VALUES(?,?,?,?,?,?)`, [userId, title, price, description, categoryId, unit]);
-        return results[0];
+        const [results] = await db.execute(`INSERT INTO transactions(user_id, title, price, description, category_id, unit) VALUES(?,?,?,?,?,?)`, [userId, title, price, description, categoryId, unit]);        
+        return results;
     }
 
     async updateTransaction({ transactionId, title, price, description, categoryId, unit }) {
-        const [results] = await db.execute(`UPDATE transactions SET title=?, price=?, description=?, categoryId=?, unit=? WHERE id=?`, [title, price, description, categoryId, unit, transactionId]);
-        return results[0];
+        const [results] = await db.execute(`UPDATE transactions SET title=?, price=?, description=?, category_id=?, unit=? WHERE id=?`, [title, price, description, categoryId, unit, transactionId]);
+        console.log("results",results);
+        
+        return results;
     }
 
     async deleteTransaction({ transactionId }) {
