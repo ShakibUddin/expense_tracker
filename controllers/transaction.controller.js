@@ -8,16 +8,18 @@ module.exports = {
             if (!(request.query?.page && request.query?.perPage)) return getErrorResponse({ response, code: 400, message: "Missing required parameters" });
             if (Number(request.query?.page) === 0 || Number(request.query?.perPage) === 0) return getErrorResponse({ response, code: 400, message: "Invalid parameters" });
 
-            const { page, perPage } = request.query;
+            const { page, perPage, searchKey, categoryId, startDateTime, endDateTime } = request.query;
             const transaction = new Transaction();
 
-            const totalTransactionsOfCurrentUser = await transaction.getTotalTransactionsByUserId(currentUser.id);
-            const paginatedTransactionsOfCurrentUser = await transaction.getTransactionsByUserId({ userId: String(currentUser.id), page, perPage });
+            if(startDateTime && !endDateTime)return getErrorResponse({ response, code: 400, message: "Missing required parameters" });
+
+            const totalTransactionsOfCurrentUser = await transaction.getTotalTransactionsByUserId({userId: currentUser.id, searchKey, categoryId, startDateTime, endDateTime});
+            const paginatedTransactionsOfCurrentUser = await transaction.getTransactionsByUserId({ userId: String(currentUser.id), page, perPage, searchKey, categoryId, startDateTime, endDateTime });
 
             return getSuccessResponse({
                 response,
                 code: 200,
-                message: `Transactions found for ${currentUser.username}`,
+                message: 'Transactions fetched successfully.',
                 data: {
                     page: Number(page),
                     per_page: Number(perPage),
@@ -75,7 +77,7 @@ module.exports = {
                 // check if the transaction was created by the currentUser
                 if (existingTransaction.user_id === currentUser.id) {
                     // update the transaction
-                    const updatedTransaction = await transaction.updateTransaction({ transactionId: id, title, price, description, categoryId, unit });
+                    await transaction.updateTransaction({ transactionId: id, title, price, description, categoryId, unit });
                     return getSuccessResponse({
                         response,
                         code: 200,
