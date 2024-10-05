@@ -23,7 +23,7 @@ class Transaction {
         return results[0];
     }
 
-    async getTransactionsByUserId({ userId, page, perPage, searchKey, categoryId, startDateTime, endDateTime }) {
+    async getTransactionsByUserId({ userId, page, perPage, searchKey, categoryId, startDateTime, endDateTime, orderBy, order }) {
         const offset = String(Number(page) === 1 ? 0 : (Number(page) - 1) * Number(perPage));
 
         // base query
@@ -47,7 +47,20 @@ class Transaction {
             query += ` AND transactions.created_at BETWEEN ? AND ?`;
             params.push(startDateTime, endDateTime)
         }
+
+        if (orderBy && order) {
+            const validOrders = ['ASC', 'DESC'];
+            // Ensure that order can only be ASC or DESC to avoid potential issues or SQL injection risks
+            if (!validOrders.includes(order.toUpperCase())) {
+                throw new Error("Invalid order direction");
+            }
+    
+            // Escapes the column name to prevent SQL injection and ensure it's treated as an identifier
+            query += ` ORDER BY ${db.escapeId(orderBy)} ${order.toUpperCase()}`;
+        }
+        
         query += ` LIMIT ? OFFSET ?`;
+
         params.push(perPage, offset);
 
         const [results] = await db.execute(query, params);

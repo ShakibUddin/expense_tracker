@@ -5,16 +5,17 @@ module.exports = {
     getAllTransactionsByUserId: async (request, response) => {
         try {
             const currentUser = request.user;
-            if (!(request.query?.page && request.query?.perPage)) return getErrorResponse({ response, code: 400, message: "Missing required parameters" });
-            if (Number(request.query?.page) === 0 || Number(request.query?.perPage) === 0) return getErrorResponse({ response, code: 400, message: "Invalid parameters" });
-
-            const { page, perPage, searchKey, categoryId, startDateTime, endDateTime } = request.query;
+            
+            const { page, perPage, searchKey, categoryId, startDateTime, endDateTime, orderBy, order } = request.query;
             const transaction = new Transaction();
 
-            if(startDateTime && !endDateTime)return getErrorResponse({ response, code: 400, message: "Missing required parameters" });
+            if((startDateTime && !endDateTime) || (!startDateTime && endDateTime))return getErrorResponse({ response, code: 400, message: "Missing required parameters" });
+            if((orderBy && !order) || (!orderBy && order))return getErrorResponse({ response, code: 400, message: "Missing required parameters" });
+            if (!(page && perPage)) return getErrorResponse({ response, code: 400, message: "Missing required parameters" });
+            if (Number(page) === 0 || Number(perPage) === 0) return getErrorResponse({ response, code: 400, message: "Invalid parameters" });
 
             const totalTransactionsOfCurrentUser = await transaction.getTotalTransactionsByUserId({userId: currentUser.id, searchKey, categoryId, startDateTime, endDateTime});
-            const paginatedTransactionsOfCurrentUser = await transaction.getTransactionsByUserId({ userId: String(currentUser.id), page, perPage, searchKey, categoryId, startDateTime, endDateTime });
+            const paginatedTransactionsOfCurrentUser = await transaction.getTransactionsByUserId({ userId: String(currentUser.id), page, perPage, searchKey, categoryId, startDateTime, endDateTime, orderBy, order });
 
             return getSuccessResponse({
                 response,
