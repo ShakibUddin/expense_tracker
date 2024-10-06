@@ -54,11 +54,11 @@ class Transaction {
             if (!validOrders.includes(order.toUpperCase())) {
                 throw new Error("Invalid order direction");
             }
-    
+
             // Escapes the column name to prevent SQL injection and ensure it's treated as an identifier
             query += ` ORDER BY ${db.escapeId(orderBy)} ${order.toUpperCase()}`;
         }
-        
+
         query += ` LIMIT ? OFFSET ?`;
 
         params.push(perPage, offset);
@@ -110,6 +110,17 @@ class Transaction {
         await db.execute(`DELETE FROM transactions WHERE id=?`, [
             transactionId,
         ]);
+    }
+
+    async fetchExpensesByTimeframe({ userId }) {
+        // This will return expenses for today. CURDATE() returns the current date, and DATE() ensures we're comparing only the date part
+        const [expenseCurrentDay] = await db.execute(`Select SUM(price) as total from transactions WHERE user_id=? AND DATE(created_at) = CURDATE()`, [userId])
+        // This query will return expenses for the current week. YEARWEEK() takes two arguments: the date column and the mode (with 1 starting the week on Monday). It compares the current week's number to the created_at
+        const [expenseCurrentWeek] = await db.execute(`Select SUM(price) as total from transactions WHERE user_id=? AND YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)`, [userId])
+        const [expenseCurrentMonth] = await db.execute(`Select SUM(price) as total from transactions WHERE user_id=? AND YEAR(created_at) = YEAR(CURDATE()) AND MONTH(created_at) = MONTH(CURDATE())`, [userId])
+        const [expenseCurrentYear] = await db.execute(`Select SUM(price) as total from transactions WHERE user_id=? AND YEAR(created_at) = YEAR(CURDATE())`, [userId])
+
+        return { expenseCurrentDay: expenseCurrentDay[0]?.total, expenseCurrentWeek: expenseCurrentWeek[0]?.total, expenseCurrentMonth: expenseCurrentMonth[0]?.total, expenseCurrentYear: expenseCurrentYear[0]?.total }
     }
 }
 

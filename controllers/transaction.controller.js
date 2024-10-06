@@ -34,6 +34,33 @@ module.exports = {
             return getErrorResponse({ response, code: 500, message: "Something went wrong!" });
         }
     },
+    getExpenseByTimeFrame: async (request, response) => {
+        try {
+            const currentUser = request.user;
+            
+            const transaction = new Transaction();
+
+            const expenseByTimeFrameOfCurrentUser = await transaction.fetchExpensesByTimeframe({ userId: String(currentUser.id)});
+
+            console.log("expenseByTimeFrameOfCurrentUser",expenseByTimeFrameOfCurrentUser);
+            
+            return getSuccessResponse({
+                response,
+                code: 200,
+                message: 'Transactions fetched successfully.',
+                data: {
+                    expenseCurrentDay: parseFloat(expenseByTimeFrameOfCurrentUser?.expenseCurrentDay),
+                    expenseCurrentWeek: parseFloat(expenseByTimeFrameOfCurrentUser?.expenseCurrentWeek),
+                    expenseCurrentMonth: parseFloat(expenseByTimeFrameOfCurrentUser?.expenseCurrentMonth),
+                    expenseCurrentYear: parseFloat(expenseByTimeFrameOfCurrentUser?.expenseCurrentYear)
+                  }
+            });
+
+        } catch (err) {
+            console.log("error", err.message);
+            return getErrorResponse({ response, code: 500, message: "Something went wrong!" });
+        }
+    },
     createTransaction: async (request, response) => {
         try {
             const currentUser = request.user;
@@ -42,6 +69,8 @@ module.exports = {
             if (!(title && price && description && categoryId && unit)) return getErrorResponse({ response, code: 400, message: "Missing required parameters" });
 
             const transaction = new Transaction();
+
+            // check if the category id is valid
 
             // create the transaction
             const newTransaction = await transaction.createTransaction({ userId: currentUser.id, title, price, description, categoryId, unit });
