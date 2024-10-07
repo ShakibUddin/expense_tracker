@@ -95,8 +95,8 @@ module.exports = {
             const existingCategory = await category.getCategoryById(categoryId);
 
             // check if the category exists and current user created it
-            if (existingCategory) {
-                if (existingCategory.user_id === currentUser.id) {
+            if (existingCategory) {                
+                if (Boolean(existingCategory.is_default) ||  (!Boolean(existingCategory.is_default) && existingCategory.user_id === currentUser.id)) {
                     // create the transaction
                     const newTransaction = await transaction.createTransaction({ userId: currentUser.id, title, pricePerUnit, description, categoryId, quantity });
 
