@@ -21,11 +21,11 @@ const verifyToken = async (request, response, next) => {
     ) {
       request.user = userInDB;
     } else {
-      return getErrorResponse({response, code: 401, message: "Unauthorized request"});
+      return getErrorResponse({response, code: 401, message: "Unauthorized access"});
     }
   } catch (err) {
     console.log("error", err);
-    return getErrorResponse({response, code: 401, message: "Unauthorized request"});
+    return getErrorResponse({response, code: 401, message: "Unauthorized access"});
   }
   return next();
 };

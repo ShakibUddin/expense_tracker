@@ -122,6 +122,12 @@ class Transaction {
 
         return { expenseCurrentDay: expenseCurrentDay[0]?.total, expenseCurrentWeek: expenseCurrentWeek[0]?.total, expenseCurrentMonth: expenseCurrentMonth[0]?.total, expenseCurrentYear: expenseCurrentYear[0]?.total }
     }
+
+    async fetchExpenseOfAllCategories({userId}){
+        const [results] =  await db.execute(`SELECT categories.id, categories.title, SUM(transactions.price) as total FROM transactions INNER JOIN categories ON transactions.category_id = categories.id WHERE transactions.user_id=? GROUP BY transactions.category_id`,[userId]);
+
+        return [results]
+    }
 }
 
 module.exports = { Transaction };

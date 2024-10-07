@@ -1,20 +1,21 @@
 const { getErrorResponse, getSuccessResponse } = require("../utils/responseHandlers");
 const { Transaction } = require("../models/transaction.model");
+const { Category } = require("../models/category.model");
 
 module.exports = {
     getAllTransactionsByUserId: async (request, response) => {
         try {
             const currentUser = request.user;
-            
+
             const { page, perPage, searchKey, categoryId, startDateTime, endDateTime, orderBy, order } = request.query;
             const transaction = new Transaction();
 
-            if((startDateTime && !endDateTime) || (!startDateTime && endDateTime))return getErrorResponse({ response, code: 400, message: "Missing required parameters" });
-            if((orderBy && !order) || (!orderBy && order))return getErrorResponse({ response, code: 400, message: "Missing required parameters" });
+            if ((startDateTime && !endDateTime) || (!startDateTime && endDateTime)) return getErrorResponse({ response, code: 400, message: "Missing required parameters" });
+            if ((orderBy && !order) || (!orderBy && order)) return getErrorResponse({ response, code: 400, message: "Missing required parameters" });
             if (!(page && perPage)) return getErrorResponse({ response, code: 400, message: "Missing required parameters" });
             if (Number(page) === 0 || Number(perPage) === 0) return getErrorResponse({ response, code: 400, message: "Invalid parameters" });
 
-            const totalTransactionsOfCurrentUser = await transaction.getTotalTransactionsByUserId({userId: currentUser.id, searchKey, categoryId, startDateTime, endDateTime});
+            const totalTransactionsOfCurrentUser = await transaction.getTotalTransactionsByUserId({ userId: currentUser.id, searchKey, categoryId, startDateTime, endDateTime });
             const paginatedTransactionsOfCurrentUser = await transaction.getTransactionsByUserId({ userId: String(currentUser.id), page, perPage, searchKey, categoryId, startDateTime, endDateTime, orderBy, order });
 
             return getSuccessResponse({
@@ -37,23 +38,21 @@ module.exports = {
     getExpenseByTimeFrame: async (request, response) => {
         try {
             const currentUser = request.user;
-            
+
             const transaction = new Transaction();
 
-            const expenseByTimeFrameOfCurrentUser = await transaction.fetchExpensesByTimeframe({ userId: String(currentUser.id)});
+            const expenseByTimeFrameOfCurrentUser = await transaction.fetchExpensesByTimeframe({ userId: String(currentUser.id) });
 
-            console.log("expenseByTimeFrameOfCurrentUser",expenseByTimeFrameOfCurrentUser);
-            
             return getSuccessResponse({
                 response,
                 code: 200,
-                message: 'Transactions fetched successfully.',
+                message: 'Expenses fetched successfully.',
                 data: {
                     expenseCurrentDay: parseFloat(expenseByTimeFrameOfCurrentUser?.expenseCurrentDay),
                     expenseCurrentWeek: parseFloat(expenseByTimeFrameOfCurrentUser?.expenseCurrentWeek),
                     expenseCurrentMonth: parseFloat(expenseByTimeFrameOfCurrentUser?.expenseCurrentMonth),
                     expenseCurrentYear: parseFloat(expenseByTimeFrameOfCurrentUser?.expenseCurrentYear)
-                  }
+                }
             });
 
         } catch (err) {
@@ -61,6 +60,28 @@ module.exports = {
             return getErrorResponse({ response, code: 500, message: "Something went wrong!" });
         }
     },
+
+    getExpenseOfAllCategories: async (request, response) => {
+        try {
+            const currentUser = request.user;
+
+            const transaction = new Transaction();
+
+            const expenseOfAllCategories = await transaction.fetchExpenseOfAllCategories({ userId: String(currentUser.id) });
+
+            return getSuccessResponse({
+                response,
+                code: 200,
+                message: 'Expenses fetched successfully.',
+                data: expenseOfAllCategories
+            });
+
+        } catch (err) {
+            console.log("error", err.message);
+            return getErrorResponse({ response, code: 500, message: "Something went wrong!" });
+        }
+    },
+
     createTransaction: async (request, response) => {
         try {
             const currentUser = request.user;
@@ -69,22 +90,33 @@ module.exports = {
             if (!(title && price && description && categoryId && unit)) return getErrorResponse({ response, code: 400, message: "Missing required parameters" });
 
             const transaction = new Transaction();
+            const category = new Category();
 
-            // check if the category id is valid
+            const existingCategory = await category.getCategoryById(categoryId);
 
-            // create the transaction
-            const newTransaction = await transaction.createTransaction({ userId: currentUser.id, title, price, description, categoryId, unit });
+            // check if the category exists and current user created it
+            if (existingCategory) {
+                if (existingCategory.user_id === currentUser.id) {
+                    // create the transaction
+                    const newTransaction = await transaction.createTransaction({ userId: currentUser.id, title, price, description, categoryId, unit });
 
-            return getSuccessResponse({
-                response,
-                code: 201,
-                message: `Transaction created successfully`,
-                data: {
-                    id: newTransaction.insertId,
-                    title, price, description, categoryId, unit
+                    return getSuccessResponse({
+                        response,
+                        code: 201,
+                        message: `Transaction created successfully`,
+                        data: {
+                            id: newTransaction.insertId,
+                            title, price, description, categoryId, unit
+                        }
+                    });
                 }
-            });
-
+                else {
+                    return getErrorResponse({ response, code: 403, message: `Access denied. You do not have permission to access this resource.` });
+                }
+            }
+            else {
+                return getErrorResponse({ response, code: 400, message: `Category does not exist` });
+            }
         } catch (err) {
             console.log("error", err.message);
             return getErrorResponse({ response, code: 500, message: "Something went wrong!" });
@@ -118,7 +150,7 @@ module.exports = {
                     });
                 }
                 else {
-                    return getErrorResponse({ response, code: 403, message: `Unauthorized request` });
+                    return getErrorResponse({ response, code: 403, message: `Access denied. You do not have permission to access this resource.` });
                 }
 
             }
@@ -149,8 +181,8 @@ module.exports = {
 
                 // check if the transaction was created by the currentUser
                 if (existingTransaction.user_id === currentUser.id) {
-                    // update the transaction
-                    await transaction.deleteTransaction({ transactionId: id});
+                    // delete the transaction
+                    await transaction.deleteTransaction({ transactionId: id });
                     return getSuccessResponse({
                         response,
                         code: 200,
@@ -159,7 +191,7 @@ module.exports = {
                     });
                 }
                 else {
-                    return getErrorResponse({ response, code: 403, message: `Unauthorized request` });
+                    return getErrorResponse({ response, code: 403, message: `Access denied. You do not have permission to access this resource.` });
                 }
             }
             else {
