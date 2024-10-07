@@ -85,9 +85,9 @@ module.exports = {
     createTransaction: async (request, response) => {
         try {
             const currentUser = request.user;
-            const { title, price, description, categoryId, unit } = request.body;
+            const { title, pricePerUnit, description, categoryId, quantity } = request.body;
 
-            if (!(title && price && description && categoryId && unit)) return getErrorResponse({ response, code: 400, message: "Missing required parameters" });
+            if (!(title && pricePerUnit && description && categoryId && quantity)) return getErrorResponse({ response, code: 400, message: "Missing required parameters" });
 
             const transaction = new Transaction();
             const category = new Category();
@@ -98,7 +98,7 @@ module.exports = {
             if (existingCategory) {
                 if (existingCategory.user_id === currentUser.id) {
                     // create the transaction
-                    const newTransaction = await transaction.createTransaction({ userId: currentUser.id, title, price, description, categoryId, unit });
+                    const newTransaction = await transaction.createTransaction({ userId: currentUser.id, title, pricePerUnit, description, categoryId, quantity });
 
                     return getSuccessResponse({
                         response,
@@ -106,7 +106,7 @@ module.exports = {
                         message: `Transaction created successfully`,
                         data: {
                             id: newTransaction.insertId,
-                            title, price, description, categoryId, unit
+                            title, pricePerUnit, description, categoryId, quantity
                         }
                     });
                 }
@@ -125,10 +125,10 @@ module.exports = {
     updateTransaction: async (request, response) => {
         try {
             const currentUser = request.user;
-            const { title, price, description, categoryId, unit } = request.body;
+            const { title, pricePerUnit, description, categoryId, quantity } = request.body;
             const { id } = request.query;
 
-            if (!(id && title && price && description && categoryId && unit)) return getErrorResponse({ response, code: 400, message: "Missing required parameters" });
+            if (!(id && title && pricePerUnit && description && categoryId && quantity)) return getErrorResponse({ response, code: 400, message: "Missing required parameters" });
 
             const transaction = new Transaction();
 
@@ -139,13 +139,13 @@ module.exports = {
                 // check if the transaction was created by the currentUser
                 if (existingTransaction.user_id === currentUser.id) {
                     // update the transaction
-                    await transaction.updateTransaction({ transactionId: id, title, price, description, categoryId, unit });
+                    await transaction.updateTransaction({ transactionId: id, title, pricePerUnit, description, categoryId, quantity });
                     return getSuccessResponse({
                         response,
                         code: 200,
                         message: `Transaction updated successfully`,
                         data: {
-                            id: parseInt(id), userId: currentUser.id, title, price, description, categoryId, unit
+                            id: parseInt(id), userId: currentUser.id, title, pricePerUnit, description, categoryId, quantity
                         }
                     });
                 }

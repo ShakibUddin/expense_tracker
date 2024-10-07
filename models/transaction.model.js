@@ -80,14 +80,14 @@ class Transaction {
     async createTransaction({
         userId,
         title,
-        price,
+        pricePerUnit,
         description,
         categoryId,
-        unit,
+        quantity,
     }) {
         const [results] = await db.execute(
-            `INSERT INTO transactions(user_id, title, price, description, category_id, unit) VALUES(?,?,?,?,?,?)`,
-            [userId, title, price, description, categoryId, unit]
+            `INSERT INTO transactions(user_id, title, price_per_unit, description, category_id, quantity) VALUES(?,?,?,?,?,?)`,
+            [userId, title, pricePerUnit, description, categoryId, quantity]
         );
         return results;
     }
@@ -95,14 +95,14 @@ class Transaction {
     async updateTransaction({
         transactionId,
         title,
-        price,
+        pricePerUnit,
         description,
         categoryId,
-        unit,
+        quantity,
     }) {
         await db.execute(
-            `UPDATE transactions SET title=?, price=?, description=?, category_id=?, unit=? WHERE id=?`,
-            [title, price, description, categoryId, unit, transactionId]
+            `UPDATE transactions SET title=?, price_per_unit=?, description=?, category_id=?, quantity=? WHERE id=?`,
+            [title, pricePerUnit, description, categoryId, quantity, transactionId]
         );
     }
 
@@ -114,17 +114,17 @@ class Transaction {
 
     async fetchExpensesByTimeframe({ userId }) {
         // This will return expenses for today. CURDATE() returns the current date, and DATE() ensures we're comparing only the date part
-        const [expenseCurrentDay] = await db.execute(`Select SUM(price) as total from transactions WHERE user_id=? AND DATE(created_at) = CURDATE()`, [userId])
+        const [expenseCurrentDay] = await db.execute(`Select SUM(price_per_unit) as total from transactions WHERE user_id=? AND DATE(created_at) = CURDATE()`, [userId])
         // This query will return expenses for the current week. YEARWEEK() takes two arguments: the date column and the mode (with 1 starting the week on Monday). It compares the current week's number to the created_at
-        const [expenseCurrentWeek] = await db.execute(`Select SUM(price) as total from transactions WHERE user_id=? AND YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)`, [userId])
-        const [expenseCurrentMonth] = await db.execute(`Select SUM(price) as total from transactions WHERE user_id=? AND YEAR(created_at) = YEAR(CURDATE()) AND MONTH(created_at) = MONTH(CURDATE())`, [userId])
-        const [expenseCurrentYear] = await db.execute(`Select SUM(price) as total from transactions WHERE user_id=? AND YEAR(created_at) = YEAR(CURDATE())`, [userId])
+        const [expenseCurrentWeek] = await db.execute(`Select SUM(price_per_unit) as total from transactions WHERE user_id=? AND YEARWEEK(created_at, 1) = YEARWEEK(CURDATE(), 1)`, [userId])
+        const [expenseCurrentMonth] = await db.execute(`Select SUM(price_per_unit) as total from transactions WHERE user_id=? AND YEAR(created_at) = YEAR(CURDATE()) AND MONTH(created_at) = MONTH(CURDATE())`, [userId])
+        const [expenseCurrentYear] = await db.execute(`Select SUM(price_per_unit) as total from transactions WHERE user_id=? AND YEAR(created_at) = YEAR(CURDATE())`, [userId])
 
         return { expenseCurrentDay: expenseCurrentDay[0]?.total, expenseCurrentWeek: expenseCurrentWeek[0]?.total, expenseCurrentMonth: expenseCurrentMonth[0]?.total, expenseCurrentYear: expenseCurrentYear[0]?.total }
     }
 
     async fetchExpenseOfAllCategories({userId}){
-        const [results] =  await db.execute(`SELECT categories.id, categories.title, SUM(transactions.price) as total FROM transactions INNER JOIN categories ON transactions.category_id = categories.id WHERE transactions.user_id=? GROUP BY transactions.category_id`,[userId]);
+        const [results] =  await db.execute(`SELECT categories.id, categories.title, SUM(transactions.price_per_unit) as total FROM transactions INNER JOIN categories ON transactions.category_id = categories.id WHERE transactions.user_id=? GROUP BY transactions.category_id`,[userId]);
 
         return [results]
     }
